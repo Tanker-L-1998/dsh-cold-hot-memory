@@ -159,7 +159,7 @@ node test.mjs
 module-imported → apply-start → imported-dsh-tools → imported-dsh-llm → tools-registered
 ```
 
-## 写 DSH 插件的三个坑（亲测踩过）
+## 写 DSH 插件的四个坑（亲测踩过）
 
 1. **模块顶层不要 `import` 第三方包。** 一旦宿主里解析不到，整个模块在导入阶段就失败，而 DSH 对非必需插件只给一条不可见的警告——界面照常启动，你以为装好了，其实没加载。
    修法：顶层只 `import` 本包文件和 `node:` 内置模块，第三方包放到 `apply()` 里动态 `import()`，失败时写进心跳。
@@ -167,6 +167,9 @@ module-imported → apply-start → imported-dsh-tools → imported-dsh-llm → 
 2. **link 安装的包必须自带 `node_modules`。** 宿主的模块解析不会替你补 peer 依赖。
 
 3. **加载失败没有任何提示。** 除非自己写心跳文件，否则无法区分「没加载」和「加载了但坏了」。
+
+4. **`package.json` 不能带 BOM。** 用 PowerShell 的 `Set-Content -Encoding UTF8` 改文件会写入 BOM（`EF BB BF`），加载器用 `JSON.parse` 解析时直接抛 `SyntaxError: Unexpected token '﻿'`，然后**静默跳过整个 bundle**。PowerShell 自己读得懂 BOM，所以肉眼看不出问题。
+   修法：用编辑器保存为 UTF-8 without BOM，或 `[IO.File]::WriteAllText($path, $text, [Text.UTF8Encoding]::new($false))`。
 
 ---
 
