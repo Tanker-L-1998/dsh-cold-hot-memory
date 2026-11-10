@@ -1,6 +1,6 @@
-{
+﻿{
   "name": "dsh-cold-hot-memory",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Cold/hot memory for the DeepSeek Harness: tiered memory records, BM25 retrieval, and an auto-injected hot+warm manifest.",
   "type": "module",
