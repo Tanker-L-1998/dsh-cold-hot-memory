@@ -205,6 +205,23 @@ module-imported → apply-start → imported-dsh-tools → imported-dsh-llm → 
 | 并发写保护（单写者 inbox） | ✅ 完成 |
 | 跨项目只读引用（`refs/`，一次性快照） | ✅ 完成 |
 
+## 验证记录（2026-11-11，DSH 桌面版 0.2.1-rc.2）
+
+不是单元测试，是在运行中的宿主里逐项跑过的：
+
+| 项 | 实测结果 |
+|---|---|
+| 装载 | 心跳五步完整：module-imported → apply-start → imported-dsh-tools → imported-dsh-llm → tools-registered |
+| 清单注入 | `State` / `Open` / `Decisions` 三段；digest 不变时不重复注入 |
+| 脱敏拦截 | 写入含 `sk-…` 的卡片被拒：`card looks sensitive (2 pattern hit)` |
+| 提及即回活 | 一张 dormant 卡片被检索命中后，自动变回 `executing` |
+| 交付流水 | 卡片 `delivered` 经 inbox 落盘，inbox 清空、无锁残留 |
+| 跨项目引用 | 导入后把源项目结论 supersede，快照保持不变；源目录删除后仍在 |
+| 本地日期 | 交付流水按本地日历日期记录，不再按 UTC 提前一天 |
+| todo 探测 | `memory_stats` 显示 `todo: linked`（agent 作用域探测） |
+
+`node test-store.mjs` 另有 27 项单元测试，覆盖存储、老化、校验、回活、外部修改、inbox、引用与日期。
+
 ## 已知限制
 
 - 没有 UI
