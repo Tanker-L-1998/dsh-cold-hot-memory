@@ -1,0 +1,8 @@
+# dsh-cold-hot-memory — bundle patch layer.
+# Inserts the plugin row into the profile it is installed into.
+- insert:
+    - id: cold-hot-memory
+      name: dsh-cold-hot-memory
+      config:
+        injectManifest: true
+        manifestTokens: 1200

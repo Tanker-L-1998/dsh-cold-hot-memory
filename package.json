@@ -1,0 +1,29 @@
+{
+  "name": "dsh-cold-hot-memory",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cold/hot memory for the DeepSeek Harness: tiered memory records, BM25 retrieval, and an auto-injected hot+warm manifest.",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./engine": "./lib/engine.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/**/*.js",
+    "cordis.patch.yml"
+  ],
+  "license": "MIT",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "~4.0.5",
+    "@deepseek-ai/dsh-llm": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-tools": "0.2.1-rc.2",
+    "@deepseek-ai/schemastery": "~3.18.5"
+  }
+}

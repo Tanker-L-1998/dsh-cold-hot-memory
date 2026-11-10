@@ -1,0 +1,16 @@
+# dependencies
+node_modules/
+
+# local memory data (never publish)
+memory/
+*.memory.jsonl
+
+# logs and temp
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# editor
+.vscode/
+.idea/
