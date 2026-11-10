@@ -2,7 +2,8 @@
 
 给 [DeepSeek Harness](https://deepseek.com) 的分层记忆插件 —— 让长会话记得住**做到哪、定了什么、还欠什么**。
 
-> **状态：v0.1 实验版。** 引擎层 18 项自测通过；插件与宿主的集成尚未在真实环境验证。请勿用于重要数据。
+> **状态：v0.2 实验版。** 引擎层 18 项自测通过；**已在 DeepSeek Harness 桌面版 0.2.1-rc.2 上装载验证通过** —— 5 个工具注册成功，记忆清单注入生效。
+> 数据模型仍在重写中（见"当前进度"），请勿用于重要数据。
 
 ---
 
@@ -132,18 +133,40 @@ node test.mjs
 
 预期输出：`18 checks passed`。
 
-## 安装（未验证）
+## 安装（已验证）
 
-插件以本地 bundle 形式装入 DSH profile：
+以本地 bundle 形式装入 DSH profile：
 
-```yaml
-# cordis.patch.yml
-- insert:
-    - id: cold-hot-memory
-      name: dsh-cold-hot-memory
+```json
+// ~/.dsh/profiles/desktop/package.json
+{
+  "dependencies": {
+    "dsh-cold-hot-memory": "link:E:/DeepSeekHarness/dsh-plugin-memory"
+  },
+  "dsh": {
+    "profile": {
+      "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-web-app", "dsh-cold-hot-memory"]
+    }
+  }
+}
 ```
 
-安装后需要重启一次。**此步骤尚未在真实环境验证**，`@deepseek-ai/dsh-tools` 等 peer 依赖的解析可能有问题。
+然后在 profile 目录执行 `pnpm install`，重启 DSH。
+
+**验证方式**：插件启动时会往 `.runtime/loaded.log` 写心跳，正常应看到五行：
+
+```
+module-imported → apply-start → imported-dsh-tools → imported-dsh-llm → tools-registered
+```
+
+## 写 DSH 插件的三个坑（亲测踩过）
+
+1. **模块顶层不要 `import` 第三方包。** 一旦宿主里解析不到，整个模块在导入阶段就失败，而 DSH 对非必需插件只给一条不可见的警告——界面照常启动，你以为装好了，其实没加载。
+   修法：顶层只 `import` 本包文件和 `node:` 内置模块，第三方包放到 `apply()` 里动态 `import()`，失败时写进心跳。
+
+2. **link 安装的包必须自带 `node_modules`。** 宿主的模块解析不会替你补 peer 依赖。
+
+3. **加载失败没有任何提示。** 除非自己写心跳文件，否则无法区分「没加载」和「加载了但坏了」。
 
 ---
 
@@ -163,13 +186,24 @@ node test.mjs
 
 ---
 
+## 当前进度
+
+| 项 | 状态 |
+|---|---|
+| 引擎（检索 / 脱敏 / 去重 / 冲突） | ✅ 完成 |
+| 宿主装载（工具注册、清单注入） | ✅ 已验证 |
+| 数据模型改为 `state` / `open` / `decisions` 三类文件 | 🚧 重写中 |
+| 五态状态机 + 30/90 天老化 | 🚧 待实现 |
+| 与内置 `todo_write` 的分工 | 🚧 待实现 |
+
 ## 已知限制
 
-- 宿主集成未验证（工具注册、注入时序、peer 解析）
+- 数据模型仍是早期的 `hot/warm/cold` 三层，与设计文档中的三类文件模型不一致
 - 无并发写保护（多会话同时写同一项目会冲突）
 - 没有 UI
 - 检索是纯关键词，无语义相似度
 - 没有跨会话的自动合并
+- 配置目前读默认值（移除了 schemastery 的 `Config` 导出，以便在没有第三方静态依赖的情况下启动）
 
 ## License
 
