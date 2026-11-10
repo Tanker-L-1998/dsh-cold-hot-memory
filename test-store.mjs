@@ -172,5 +172,38 @@ ok('enqueue then flush applies project-scope writes once', () => {
   assert.equal(mem.pendingInbox(), 0)
 })
 
+console.log('refs')
+ok('imports a conclusion from another project as a read-only snapshot', () => {
+  const other = mkdtempSync(join(tmpdir(), 'memstore-other-'))
+  const src = new Memory(other).ensure('另一个项目')
+  const d = src.putDecision({ title: '分库方案', body: '按租户分库，单库上限 500GB' })
+
+  const ref = mem.importRefFrom(other, d.id)
+  assert.equal(ref.source_project, '另一个项目')
+  assert.equal(ref.source_id, d.id)
+  assert.match(ref.evidence.join(' '), /imported from 另一个项目/)
+  assert.equal(mem.refs().length, 1)
+
+  // the source keeps evolving; the snapshot must not follow
+  src.supersede(d.id, { title: '改回单库', body: '分库成本太高' })
+  assert.equal(mem.refs()[0].title, '分库方案')
+  rmSync(other, { recursive: true, force: true })
+})
+ok('unknown source decision is rejected', () => {
+  const other = mkdtempSync(join(tmpdir(), 'memstore-empty2-'))
+  new Memory(other).ensure('空项目')
+  assert.throws(() => mem.importRefFrom(other, 'D-9999'), /decision not found/)
+  rmSync(other, { recursive: true, force: true })
+})
+
+console.log('delivery date')
+ok('uses the local calendar date, not UTC', () => {
+  const line = mem.logDelivery({ task: '日期测试', version: 'v1', artifact: '-' })
+  const today = new Date()
+  const pad = (n) => String(n).padStart(2, '0')
+  const expected = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`
+  assert.ok(line.startsWith(expected), `expected ${expected}, got ${line}`)
+})
+
 rmSync(dir, { recursive: true, force: true })
 console.log(`\n${passed} checks passed`)
