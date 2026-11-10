@@ -205,5 +205,28 @@ ok('uses the local calendar date, not UTC', () => {
   assert.ok(line.startsWith(expected), `expected ${expected}, got ${line}`)
 })
 
+console.log('legacy import')
+ok('adopts a pre-1.1 global directory once, then renames it', () => {
+  const legacy = mkdtempSync(join(tmpdir(), 'memstore-legacy-'))
+  const old = new Memory(legacy).ensure('旧项目')
+  old.putDecision({ title: '旧结论', body: '全局时代的结论' })
+
+  const target = mkdtempSync(join(tmpdir(), 'memstore-new-'))
+  const fresh = new Memory(target).ensure('新项目')
+  const imported = fresh.adoptLegacy(legacy)
+
+  assert.ok(imported, 'expected an import result')
+  assert.equal(imported.decisions, 1)
+  assert.ok(fresh.decisions().some((d) => d.title === '旧结论'))
+  assert.ok(existsSync(join(target, 'LEGACY-IMPORT.md')), 'expected a marker file')
+  assert.ok(!existsSync(legacy), 'the legacy directory should be renamed away')
+  assert.equal(fresh.adoptLegacy(legacy), null, 'a second call must be a no-op')
+
+  rmSync(target, { recursive: true, force: true })
+  for (const leftover of readdirSync(tmpdir()).filter((n) => n.startsWith('memstore-legacy-'))) {
+    rmSync(join(tmpdir(), leftover), { recursive: true, force: true })
+  }
+})
+
 rmSync(dir, { recursive: true, force: true })
 console.log(`\n${passed} checks passed`)
