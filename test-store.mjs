@@ -205,6 +205,13 @@ ok('uses the local calendar date, not UTC', () => {
   assert.ok(line.startsWith(expected), `expected ${expected}, got ${line}`)
 })
 
+console.log('shared layer')
+ok('renders parent conclusions as a read-only shared section', () => {
+  const m = mem.manifest('conv1', { extraDecisions: ['[D-0009] 父级规则 — 工作区'] })
+  assert.match(m.text, /Shared \(read-only, from a parent project\)/)
+  assert.match(m.text, /父级规则/)
+})
+
 console.log('legacy import')
 ok('adopts a pre-1.1 global directory once, then renames it', () => {
   const legacy = mkdtempSync(join(tmpdir(), 'memstore-legacy-'))
