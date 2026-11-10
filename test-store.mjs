@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, existsSync, readdirSync, readFileSync } from 'node:fs'
+import { mkdtempSync, rmSync, existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import assert from 'node:assert/strict'
@@ -129,6 +129,47 @@ ok('returns null only when the project is empty too', () => {
   const empty = new Memory(fresh).ensure('空项目')
   assert.equal(empty.manifest('conv-x'), null)
   rmSync(fresh, { recursive: true, force: true })
+})
+
+console.log('validation')
+ok('rejects secrets in a card', () => {
+  assert.throws(() => mem.putCard('conv1', { title: 'k', body: 'api_key: sk-abcdefghijklmnopqrstuvwxyz123' }), /sensitive/)
+})
+ok('rejects an empty title', () => {
+  assert.throws(() => mem.putCard('conv1', { title: '   ', body: 'x' }), /title is required/)
+})
+ok('rejects a state over 600 tokens', () => {
+  assert.throws(() => mem.writeState('conv1', '很'.repeat(700)), /over the 600 limit/)
+})
+ok('rejects a card over 8KB', () => {
+  assert.throws(() => mem.putCard('conv1', { title: 'big', body: 'x'.repeat(9000) }), /over the 8192 limit/)
+})
+
+console.log('revive')
+ok('a dormant card revives to executing', () => {
+  const c = mem.putCard('conv1', { title: '回来干活', phase: 'dormant' })
+  assert.equal(mem.revive('conv1', c.id).phase, 'executing')
+})
+
+console.log('external edit')
+ok('flags a card edited outside the plugin', () => {
+  const c = mem.putCard('conv1', { title: '手改我', body: '原文' })
+  const cardsDir = join(dir, 'conv', 'conv1', 'cards')
+  const file = readdirSync(cardsDir).find((n) => n.startsWith(c.id))
+  writeFileSync(join(cardsDir, file), readFileSync(join(cardsDir, file), 'utf8').replace('原文', '我手改的'), 'utf8')
+  assert.equal(mem.cards('conv1').find((x) => x.id === c.id).external_edit, true)
+})
+
+console.log('inbox')
+ok('enqueue then flush applies project-scope writes once', () => {
+  const before = mem.decisions().length
+  mem.enqueue('convA', { op: 'decision', decision: { title: '队列里的结论', body: '通过 inbox 写入' } })
+  mem.enqueue('convB', { op: 'delivery', delivery: { task: '队列任务', version: 'v1', artifact: 'x' } })
+  assert.equal(mem.pendingInbox(), 2)
+  const result = mem.flush()
+  assert.equal(result.applied, 2)
+  assert.equal(mem.decisions().length, before + 1)
+  assert.equal(mem.pendingInbox(), 0)
 })
 
 rmSync(dir, { recursive: true, force: true })
