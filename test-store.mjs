@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, existsSync, readdirSync, readFileSync, writeFileSy
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import assert from 'node:assert/strict'
-import { Memory, PHASES, decodeCard, encodeCard } from './lib/store.js'
+import { Memory, PHASES, decodeCard, encodeCard, artifactsSatisfied } from './lib/store.js'
 
 const dir = mkdtempSync(join(tmpdir(), 'memstore-'))
 const mem = new Memory(dir).ensure('测试项目')
@@ -253,6 +253,18 @@ ok('atomic writes leave no temp files behind', () => {
   mem.putCard('conv1', { title: '原子写测试', body: 'x' })
   const leftovers = readdirSync(join(dir, 'conv', 'conv1', 'cards')).filter((n) => n.endsWith('.tmp'))
   assert.equal(leftovers.length, 0)
+})
+
+console.log('artifacts')
+ok('matches a declared artifact against a touched path', () => {
+  assert.equal(artifactsSatisfied(['src/export.ts'], ['E:/proj/src/export.ts']), true)
+  assert.equal(artifactsSatisfied(['src/export.ts'], ['E:/proj/src/other.ts']), false)
+})
+ok('ignores case and separators', () => {
+  assert.equal(artifactsSatisfied(['Docs/Report.md'], ['e:\\proj\\docs\\report.md']), true)
+})
+ok('an empty declaration never auto-delivers', () => {
+  assert.equal(artifactsSatisfied([], ['a']), false)
 })
 
 rmSync(dir, { recursive: true, force: true })

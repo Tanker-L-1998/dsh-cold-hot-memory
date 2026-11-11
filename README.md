@@ -160,7 +160,7 @@ package.json
 | 工具 | 作用 |
 |---|---|
 | `memory_state` | 读 / 覆盖"现在在做什么"（保留上一版 `.bak`） |
-| `memory_card` | 开卡片、推进阶段、列出卡片 |
+| `memory_card` | 开卡片、推进阶段、列出卡片；声明 `expectedArtifacts` 后，那些文件被成功写入时自动标为已交付 |
 | `memory_decision` | 记录结论 / 推翻旧结论（旧的自动归档） |
 | `memory_recall` | 跨卡片、结论与引用的关键词检索 |
 | `memory_ref` | 从其他项目复制一份只读快照（一次性 fork，不跟随源更新） |
@@ -169,10 +169,11 @@ package.json
 ## 运行自测
 
 ```bash
-node test.mjs
+node scripts/verify.mjs   # 静态核对：28 条能力是否都在源码里
+node test-store.mjs       # 行为测试：35 项
 ```
 
-预期输出：`18 checks passed`。
+`verify.mjs` 存在的理由见 [docs/VERIFY.md](docs/VERIFY.md)：曾经有四项能力被写成"已完成"但代码里没有。
 
 ## 安装（已验证）
 
@@ -244,6 +245,8 @@ module-imported → apply-start → imported-dsh-tools → imported-dsh-llm → 
 | 与内置 `todo_write` 的分工（探测 + 降级） | ✅ 完成 |
 | 并发写保护（单写者 inbox） | ✅ 完成 |
 | 跨项目只读引用（`refs/`，一次性快照） | ✅ 完成 |
+| 产物落地自动交付（`expectedArtifacts`） | ✅ 完成 |
+| 发版前能力核对（`scripts/verify.mjs`） | ✅ 完成 |
 
 ## 验证记录（2026-11-11，DSH 桌面版 0.2.1-rc.2）
 
