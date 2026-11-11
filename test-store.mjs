@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, existsSync, readdirSync, readFileSync, writeFileSy
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import assert from 'node:assert/strict'
-import { Memory, PHASES, decodeCard, encodeCard, artifactsSatisfied } from './lib/store.js'
+import { Memory, PHASES, decodeCard, encodeCard, artifactsSatisfied, looksHistoric } from './lib/store.js'
 
 const dir = mkdtempSync(join(tmpdir(), 'memstore-'))
 const mem = new Memory(dir).ensure('测试项目')
@@ -253,6 +253,20 @@ ok('atomic writes leave no temp files behind', () => {
   mem.putCard('conv1', { title: '原子写测试', body: 'x' })
   const leftovers = readdirSync(join(dir, 'conv', 'conv1', 'cards')).filter((n) => n.endsWith('.tmp'))
   assert.equal(leftovers.length, 0)
+})
+
+console.log('state history lint')
+ok('detects a Chinese history heading (\\b would never match here)', () => {
+  assert.equal(looksHistoric('## 历史结论\n旧账'), true)
+  assert.equal(looksHistoric('### 回顾'), true)
+})
+ok('detects an English history heading', () => {
+  assert.equal(looksHistoric('## History\nold stuff'), true)
+  assert.equal(looksHistoric('## Background'), true)
+})
+ok('does not fire on a normal state', () => {
+  assert.equal(looksHistoric('## 目标\n做插件\n## 下一步\n重启'), false)
+  assert.equal(looksHistoric('# 番茄小说项目（2026-11-11）'), false)
 })
 
 console.log('artifacts')

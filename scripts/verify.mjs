@@ -48,6 +48,7 @@ const CAPABILITIES = [
   ['原子写 tmp + rename', /writeAtomic/],
   ['schema 版本迁移', /SCHEMA_VERSION/],
   ['产物落地自动交付', /artifactsSatisfied\(/],
+  ['state 历史内容警告', /looksHistoric/],
 ]
 
 let failures = 0
