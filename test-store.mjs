@@ -235,5 +235,25 @@ ok('adopts a pre-1.1 global directory once, then renames it', () => {
   }
 })
 
+console.log('durability')
+ok('stamps schema_version on a new project', () => {
+  const data = JSON.parse(readFileSync(join(dir, 'project.json'), 'utf8'))
+  assert.equal(data.schema_version, 2)
+})
+ok('migrates a project.json that predates schema_version', () => {
+  const legacy = mkdtempSync(join(tmpdir(), 'memstore-schema-'))
+  writeFileSync(join(legacy, 'project.json'), JSON.stringify({ id: 'x', name: 'old' }), 'utf8')
+  new Memory(legacy).ensure('old')
+  const data = JSON.parse(readFileSync(join(legacy, 'project.json'), 'utf8'))
+  assert.equal(data.schema_version, 2)
+  assert.ok(data.migrated_at)
+  rmSync(legacy, { recursive: true, force: true })
+})
+ok('atomic writes leave no temp files behind', () => {
+  mem.putCard('conv1', { title: '原子写测试', body: 'x' })
+  const leftovers = readdirSync(join(dir, 'conv', 'conv1', 'cards')).filter((n) => n.endsWith('.tmp'))
+  assert.equal(leftovers.length, 0)
+})
+
 rmSync(dir, { recursive: true, force: true })
 console.log(`\n${passed} checks passed`)
